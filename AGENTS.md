@@ -1,0 +1,9 @@
+# Repository notes
+
+- The root is the self-hosted Supabase Docker Compose deployment; it has no root package manifest. The five app folders and `supabase/` are separate Git submodules. Clone with `git clone --recurse-submodules`. After editing one, use `sh scripts/commit-submodule.sh "<submodule-path>" "<commit message>"` (add `--yes` for non-interactive use after reviewing its staged-path list); it commits the submodule and then only its pointer in the root. It refuses pre-staged changes and likely secrets/generated files. It does not push; push from each repository separately when requested.
+- Root Compose reads local settings from `.env` (copy `.env.example` for a fresh setup). Keep real credentials and client secrets out of Git; `.env` and secret JSON files are ignored.
+- `sh run.sh` wraps Docker Compose and reads colon-separated `COMPOSE_FILE` from `.env` for optional overrides. The base `docker-compose.yml` is included automatically. Useful commands: `sh run.sh start`, `sh run.sh status`, `sh run.sh logs [service]`, `sh run.sh compose-config`.
+- The shell scripts require a POSIX-compatible shell (for example Git Bash or WSL on Windows), Docker Compose, and the project’s configured `.env`.
+- Root integration checks target a live stack: `sh tests/test-self-hosted.sh [base_url]` and `sh tests/test-auth-keys.sh [base_url]` require `.env`, a running deployment, and `jq`; the auth-key test also requires `openssl`. Run from the repository root.
+- Each app submodule has its own `package.json`; run `npm run lint`, `npm run typecheck`, or `npm run build` from that app’s directory. There is no root npm workspace.
+- Before updating a deployment, back up the database; preview with `sh update.sh --dry-run`. Do not run `sh reset.sh`: it removes containers and volumes, including database and storage data.
