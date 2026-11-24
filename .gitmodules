@@ -1,0 +1,18 @@
+[submodule "supabase"]
+	path = supabase
+	url = https://github.com/supabase/supabase.git
+[submodule "AstroSimNexus"]
+	path = AstroSimNexus
+	url = https://github.com/zzz-creator/AstroSimNexus.git
+[submodule "KwanPro"]
+	path = KwanPro
+	url = https://github.com/zzz-creator/KwanPro.git
+[submodule "OmniPOS Core"]
+	path = OmniPOS Core
+	url = https://github.com/zzz-creator/OmniPOS-Core.git
+[submodule "OpsGrid"]
+	path = OpsGrid
+	url = https://github.com/zzz-creator/OpsGrid.git
+[submodule "ProdIntelStageOps"]
+	path = ProdIntelStageOps
+	url = https://github.com/zzz-creator/ProdIntelStageOps.git
