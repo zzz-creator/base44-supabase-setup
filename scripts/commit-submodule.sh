@@ -4,14 +4,17 @@ set -eu
 usage() {
     cat <<'EOF'
 Usage: sh scripts/commit-submodule.sh <submodule-path> <commit-message> [--yes]
+       [--co-author "Name <email>"]
 
 Commit all current changes in one configured submodule, then commit only its
 updated pointer in the root repository. This script does not push either repo.
 Use --yes to skip the staged-file confirmation after reviewing the printed list.
+Use --co-author to add a Co-authored-by trailer to both commits; omit it when
+no co-author credit is needed.
 EOF
 }
 
-if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+if [ "$#" -lt 2 ]; then
     usage >&2
     exit 2
 fi
@@ -19,11 +22,33 @@ fi
 SUBMODULE=$1
 MESSAGE=$2
 ASSUME_YES=0
-if [ "$#" -eq 3 ]; then
-    [ "$3" = "--yes" ] || { usage >&2; exit 2; }
-    ASSUME_YES=1
-fi
+CO_AUTHOR=
+shift 2
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --yes)
+            [ "$ASSUME_YES" -eq 0 ] || { echo "Error: duplicate --yes option." >&2; exit 2; }
+            ASSUME_YES=1
+            shift
+            ;;
+        --co-author)
+            [ -z "$CO_AUTHOR" ] || { echo "Error: duplicate --co-author option." >&2; exit 2; }
+            [ "$#" -ge 2 ] || { echo "Error: --co-author requires a value." >&2; exit 2; }
+            CO_AUTHOR=$2
+            shift 2
+            ;;
+        *)
+            echo "Error: unknown option '$1'." >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
 [ -n "$MESSAGE" ] || { echo "Error: commit message cannot be empty." >&2; exit 2; }
+if [ -n "$CO_AUTHOR" ] && ! printf '%s\n' "$CO_AUTHOR" | grep -Eq '^[^<>[:cntrl:]]+ <[^<>[:space:]@]+@[^<>[:space:]@]+>$'; then
+    echo 'Error: --co-author must be formatted as "Name <email>".' >&2
+    exit 2
+fi
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
@@ -115,7 +140,9 @@ if ! git -C "$SUBMODULE_DIR" diff --cached --quiet; then
     printf '%s\n' "$STAGED_PATHS"
     if [ "$ASSUME_YES" -ne 1 ]; then
         if [ ! -t 0 ]; then
+            git -C "$SUBMODULE_DIR" reset --quiet
             echo "Error: non-interactive use requires --yes after reviewing the staged paths." >&2
+            echo "The paths remain in the worktree but have been unstaged." >&2
             exit 1
         fi
         printf "Commit these paths? [y/N] "
@@ -130,8 +157,11 @@ if ! git -C "$SUBMODULE_DIR" diff --cached --quiet; then
         esac
     fi
 
-    git -C "$SUBMODULE_DIR" commit -m "$MESSAGE" \
-        -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+    if [ -n "$CO_AUTHOR" ]; then
+        git -C "$SUBMODULE_DIR" commit -m "$MESSAGE" -m "Co-authored-by: $CO_AUTHOR"
+    else
+        git -C "$SUBMODULE_DIR" commit -m "$MESSAGE"
+    fi
 else
     echo "No uncommitted changes in '$SUBMODULE'; checking whether its root pointer needs updating."
 fi
@@ -142,7 +172,10 @@ if git -C "$ROOT" diff --cached --quiet; then
     exit 0
 fi
 
-git -C "$ROOT" commit -m "chore: update $SUBMODULE submodule" \
-    -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+if [ -n "$CO_AUTHOR" ]; then
+    git -C "$ROOT" commit -m "chore: update $SUBMODULE submodule" -m "Co-authored-by: $CO_AUTHOR"
+else
+    git -C "$ROOT" commit -m "chore: update $SUBMODULE submodule"
+fi
 
 echo "Committed '$SUBMODULE' and its root pointer. Push each repository separately when ready."

@@ -1,96 +1,82 @@
-<div align="center">
+# Base44 Supabase Setup
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/supabase/supabase/3-self-hosted-deployment)
+This repository brings together a self-hosted Supabase backend and five frontend
+applications. The root Docker Compose configuration runs the shared backend;
+the application projects are separate Git submodules configured to use it.
 
-</div>
+## Applications
 
-# Self-Hosted Supabase with Docker
+- **[AstroSimNexus](https://github.com/zzz-creator/AstroSimNexus/blob/main/README.md)** — space-logistics and colony-management simulation, with fleet, colony, and economic operations.
+- **[KwanPro](https://github.com/zzz-creator/KwanPro/blob/main/README.md)** — dojo management for students, classes, attendance, belt promotions, payments, and student services.
+- **[OmniPOS Core](https://github.com/zzz-creator/OmniPOS-Core/blob/main/README.md)** — point-of-sale and management application.
+- **[OpsGrid](https://github.com/zzz-creator/OpsGrid/blob/main/README.md)** — IT operations console for alerts, incidents, analytics, automation, and workspace control.
+- **[ProdIntelStageOps](https://github.com/zzz-creator/ProdIntelStageOps/blob/main/README.md)** — production and stage-operations management for productions, crews, equipment, venues, schedules, and incidents.
 
-This is the official Docker Compose setup for self-hosted Supabase. It provides a complete stack with all Supabase services running locally or on your infrastructure.
+Each app depends on the Supabase backend configured by this repository. For app
+setup, environment variables, and development commands, see its README.
 
-## Getting Started
+## Fresh setup
 
-Follow the detailed setup guide in our documentation: [Self-Hosting with Docker](https://supabase.com/docs/guides/self-hosting/docker)
+1. Install Git, Docker Engine, and the Docker Compose plugin. On Windows, use
+   WSL 2 or another environment that provides a POSIX-compatible shell for the
+   repository scripts.
+2. Clone this repository and all of its app/backend submodules:
 
-The guide covers:
-- Prerequisites (Git and Docker)
-- Initial setup and configuration
-- Securing your installation
-- Accessing services
-- Updating your instance
+   ```sh
+   git clone --recurse-submodules https://github.com/zzz-creator/base44-supabase-setup.git
+   cd base44-supabase-setup
+   ```
 
-## What's Included
+3. Create and configure the local environment file:
 
-This Docker Compose configuration includes the following services:
+   ```sh
+   cp .env.example .env
+   ```
 
-- **[Studio](https://github.com/supabase/supabase/tree/master/apps/studio)** - A dashboard for managing your self-hosted Supabase project
-- **[Envoy](https://www.envoyproxy.io/)** - API gateway (default; Kong is available as an optional override via `sh run.sh config add kong`)
-- **[Auth](https://github.com/supabase/auth)** - JWT-based authentication API for user sign-ups, logins, and session management
-- **[PostgREST](https://github.com/PostgREST/postgrest)** - Web server that turns your PostgreSQL database directly into a RESTful API
-- **[Realtime](https://github.com/supabase/realtime)** - Elixir server that listens to PostgreSQL database changes and broadcasts them over websockets
-- **[Storage](https://github.com/supabase/storage)** - RESTful API for managing files in S3, with Postgres handling permissions
-- **[imgproxy](https://github.com/imgproxy/imgproxy)** - Fast and secure image processing server
-- **[postgres-meta](https://github.com/supabase/postgres-meta)** - RESTful API for managing Postgres (fetch tables, add roles, run queries)
-- **[PostgreSQL](https://github.com/supabase/postgres)** - Object-relational database with over 30 years of active development
-- **[Edge Runtime](https://github.com/supabase/edge-runtime)** - Web server based on Deno runtime for running JavaScript, TypeScript, and WASM services
-- **[Logflare](https://github.com/Logflare/logflare)** - Log management and event analytics platform
-- **[Vector](https://github.com/vectordotdev/vector)** - High-performance observability data pipeline for logs
-- **[Supavisor](https://github.com/supabase/supavisor)** - Supabase's Postgres connection pooler
+   Review the URLs, passwords, and keys in `.env`; replace example/default
+   values and keep the file private. The root `.gitignore` excludes it.
+4. Start the stack:
 
-## Documentation
+   ```sh
+   sh run.sh start
+   sh run.sh status
+   ```
 
-- **[Self-Hosting with Docker](https://supabase.com/docs/guides/self-hosting/docker)** - Setup and configuration guides
-- **[CHANGELOG.md](./CHANGELOG.md)** - Track recent updates and changes to services
-- **[versions.md](./versions.md)** - Complete history of Docker image versions for rollback reference
-- **[Ask DeepWiki / Supabase](https://deepwiki.com/supabase/supabase/3-self-hosted-deployment)** - DeepWiki-generated description of self-hosted configuration
-- **[CONFIG.md](./CONFIG.md)** - Configuration reference for all environment variables
-- **[Update your deployment](https://supabase.com/docs/guides/self-hosting/updating)** - Update an existing deployment with `update.sh`
+   The default API gateway is available at `http://localhost:8000`. Configure
+   each frontend with that Supabase URL and the matching public anon key from
+   `.env`; never put the service-role key in a frontend.
 
-## Updates
+## Supabase setup and operations
 
-Back up your database, then:
+This repository uses Supabase’s self-hosted Docker Compose deployment. For
+prerequisites, security, configuration, and troubleshooting, see:
+
+- [Supabase self-hosting with Docker](https://supabase.com/docs/guides/self-hosting/docker)
+- [Supabase self-hosting overview](https://supabase.com/docs/guides/self-hosting)
+- [Self-hosted deployment configuration reference](./CONFIG.md)
+- [Update guide](https://supabase.com/docs/guides/self-hosting/updating)
+
+Useful stack commands:
 
 ```sh
-sh update.sh --dry-run   # optional preview
-sh update.sh
-sh run.sh pull && sh run.sh recreate
+sh run.sh logs [service]
+sh run.sh compose-config
+sh run.sh stop
 ```
 
-See the **[update guide](https://supabase.com/docs/guides/self-hosting/updating)** for conflicts,
-breaking changes, pinning a release, and older installs without `.supabase-version`.
+Back up the database before updates. `sh reset.sh` is destructive: it removes
+containers and bind-mounted database/storage data.
 
-## Community & Support
+## Working with submodules
 
-For troubleshooting common issues, see:
-- [GitHub Discussions](https://github.com/orgs/supabase/discussions?discussions_q=is%3Aopen+label%3Aself-hosted) - Questions, feature requests, and workarounds
-- [GitHub Issues](https://github.com/supabase/supabase/issues?q=is%3Aissue%20state%3Aopen%20label%3Aself-hosted) - Known issues
-- [Documentation](https://supabase.com/docs/guides/self-hosting) - Setup and configuration guides
+The five apps and `supabase/` are independent Git repositories. After changing
+an app, commit inside that app repository and then update its pointer in this
+root repository. The helper performs those two commits in order:
 
-Self-hosted Supabase is community-supported. Get help and connect with other users:
+```sh
+sh scripts/commit-submodule.sh "AstroSimNexus" "feat: describe change"
+```
 
-- [Discord](https://discord.supabase.com) - Real-time chat and community support
-- [Reddit](https://www.reddit.com/r/Supabase/) - Official Supabase subreddit
-
-Share your self-hosting experience:
-
-- [GitHub Discussions](https://github.com/orgs/supabase/discussions/39820) - "Self-hosting: What's working (and what's not)?"
-
-## Important Notes
-
-### Security
-
-⚠️ **The default configuration is not secure for production use.**
-
-Before deploying to production, you must:
-- [Update](https://supabase.com/docs/guides/self-hosting/docker#configuring-and-securing-supabase) all default passwords and secrets in the `.env` file
-- Review and update CORS settings
-- Set up a [secure proxy](https://supabase.com/docs/guides/self-hosting/self-hosted-proxy-https) in front of your self-hosted Supabase
-- Review and adjust network security configuration (ACLs, etc.)
-- Set up proper backup procedures
-
-See the [main installation guide](https://supabase.com/docs/guides/self-hosting/docker) and the how-tos in the documentation.
-
-## License
-
-This repository is licensed under the Apache 2.0 License. See the main [Supabase repository](https://github.com/supabase/supabase) for details.
+Review the listed paths before confirming. For non-interactive use, pass
+`--yes` after reviewing the paths. The helper does not push; push each changed
+repository separately.
